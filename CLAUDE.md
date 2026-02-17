@@ -78,7 +78,7 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 ## Environment Variables
 
 Environment variables are managed via env files:
-- `.env.dev` - Development values (used by default with docker-compose)
+- `.env` - Development values (used by default with docker-compose)
 - `.env.prod` - Production values (placeholder template, must be configured)
 - `.env.example` - Reference template
 

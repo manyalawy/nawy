@@ -3,13 +3,13 @@
 
 services:
   db:
-    env_file: .env.dev
+    env_file: .env
 
   auth-service:
     build:
       context: ./services/auth-service
       dockerfile: Dockerfile.dev
-    env_file: .env.dev
+    env_file: .env
     volumes:
       - ./services/auth-service:/app
       - /app/node_modules
@@ -19,7 +19,7 @@ services:
     build:
       context: ./services/apartment-service
       dockerfile: Dockerfile.dev
-    env_file: .env.dev
+    env_file: .env
     volumes:
       - ./services/apartment-service:/app
       - /app/node_modules
@@ -29,7 +29,7 @@ services:
     build:
       context: ./services/api-gateway
       dockerfile: Dockerfile.dev
-    env_file: .env.dev
+    env_file: .env
     volumes:
       - ./services/api-gateway:/app
       - /app/node_modules
@@ -39,7 +39,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    env_file: .env.dev
+    env_file: .env
     volumes:
       - ./frontend:/app
       - /app/node_modules
