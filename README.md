@@ -63,6 +63,24 @@ docker-compose up --build
    - API Gateway: http://localhost:3001
    - API Documentation: http://localhost:3001/api/docs
 
+### Development with Hot-Reloading
+
+By default, `docker-compose up` enables hot-reloading for all services. Code changes reflect immediately without rebuilding images.
+
+```bash
+# Development mode (with hot-reload) - default
+docker-compose up --build
+
+# Production mode (no hot-reload)
+docker-compose -f docker-compose.yml up --build
+```
+
+The development setup uses:
+- `docker-compose.override.yml` - Overrides with volume mounts and dev commands
+- `Dockerfile.dev` files - Simplified dev containers for each service
+- Volume mounts - Sync local source files into containers
+- Watch mode - NestJS (`nest start --watch`) and Next.js (`next dev`)
+
 ### Seeding the Database
 
 After the services are running, seed the database with sample data:
@@ -163,23 +181,35 @@ cd frontend && npm run dev
 
 ```
 nawy-apartments/
-├── docker-compose.yml
+├── docker-compose.yml          # Production Docker config
+├── docker-compose.override.yml # Development overrides (hot-reload)
+├── .env.dev                    # Development environment variables
+├── .env.prod                   # Production environment variables (configure!)
+├── .env.example                # Environment variable template
 ├── README.md
 ├── services/
-│   ├── api-gateway/          # API Gateway (NestJS)
-│   ├── auth-service/         # Auth Service (NestJS)
-│   └── apartment-service/    # Apartment Service (NestJS)
-├── frontend/                 # Next.js Frontend
+│   ├── api-gateway/            # API Gateway (NestJS)
+│   │   ├── Dockerfile          # Production Dockerfile
+│   │   └── Dockerfile.dev      # Development Dockerfile
+│   ├── auth-service/           # Auth Service (NestJS)
+│   │   ├── Dockerfile
+│   │   └── Dockerfile.dev
+│   └── apartment-service/      # Apartment Service (NestJS)
+│       ├── Dockerfile
+│       └── Dockerfile.dev
+├── frontend/                   # Next.js Frontend
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
 │   └── src/
-│       ├── app/              # App Router pages
-│       ├── components/       # React components
-│       ├── context/          # React contexts
-│       ├── hooks/            # Custom hooks
-│       ├── lib/              # Utilities
-│       ├── styles/           # Theme and styles
-│       └── types/            # TypeScript types
+│       ├── app/                # App Router pages
+│       ├── components/         # React components
+│       ├── context/            # React contexts
+│       ├── hooks/              # Custom hooks
+│       ├── lib/                # Utilities
+│       ├── styles/             # Theme and styles
+│       └── types/              # TypeScript types
 └── shared/
-    └── types/                # Shared TypeScript types
+    └── types/                  # Shared TypeScript types
 ```
 
 ## Features
@@ -200,7 +230,26 @@ nawy-apartments/
 
 ## Environment Variables
 
-See `.env.example` for all available environment variables.
+The project uses separate environment files for development and production:
+
+| File | Purpose |
+|------|---------|
+| `.env.dev` | Development configuration (used by default) |
+| `.env.prod` | Production configuration (requires setup) |
+| `.env.example` | Reference template |
+
+**Development** runs automatically with `.env.dev` values.
+
+**Production** requires configuring `.env.prod`:
+1. Copy placeholder values: `cp .env.prod .env.prod.local`
+2. Update with real values (database URL, JWT secret, domains)
+3. Run: `docker-compose -f docker-compose.yml --env-file .env.prod up --build`
+
+Key variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Secret key for JWT signing (change in production!)
+- `NEXT_PUBLIC_API_URL` - API URL for frontend
+- `CORS_ORIGIN` - Allowed CORS origin
 
 ## License
 

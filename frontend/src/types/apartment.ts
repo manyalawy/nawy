@@ -45,3 +45,24 @@ export interface PaginatedResponse<T> {
     totalPages: number;
   };
 }
+
+export interface CreateApartmentInput {
+  unitName: string;
+  unitNumber: string;
+  projectId: string;
+  price: number;
+  area: number;
+  bedrooms: number;
+  bathrooms: number;
+  floor?: number;
+  description?: string;
+  features?: string[];
+  images?: string[];
+}
+
+export interface CreateProjectInput {
+  name: string;
+  location: string;
+  description?: string;
+  developer?: string;
+}

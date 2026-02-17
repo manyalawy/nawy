@@ -2,16 +2,17 @@ services:
   db:
     image: postgres:16-alpine
     container_name: nawy-db
+    env_file: .env.prod
     environment:
-      POSTGRES_USER: nawy
-      POSTGRES_PASSWORD: nawy_secret
-      POSTGRES_DB: nawy_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nawy -d nawy_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,13 +24,14 @@ services:
       context: ./services/auth-service
       dockerfile: Dockerfile
     container_name: nawy-auth-service
+    env_file: .env.prod
     ports:
-      - "3002:3002"
+      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
     environment:
-      - PORT=3002
-      - DATABASE_URL=postgresql://nawy:nawy_secret@db:5432/nawy_db
-      - JWT_SECRET=${JWT_SECRET:-nawy-jwt-secret-key-change-in-production}
-      - CORS_ORIGIN=http://localhost:3004
+      - PORT=${AUTH_SERVICE_PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
     depends_on:
       db:
         condition: service_healthy
@@ -42,12 +44,13 @@ services:
       context: ./services/apartment-service
       dockerfile: Dockerfile
     container_name: nawy-apartment-service
+    env_file: .env.prod
     ports:
-      - "3003:3003"
+      - "${APARTMENT_SERVICE_PORT}:${APARTMENT_SERVICE_PORT}"
     environment:
-      - PORT=3003
-      - DATABASE_URL=postgresql://nawy:nawy_secret@db:5432/nawy_db
-      - CORS_ORIGIN=http://localhost:3004
+      - PORT=${APARTMENT_SERVICE_PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - CORS_ORIGIN=${CORS_ORIGIN}
     depends_on:
       db:
         condition: service_healthy
@@ -60,14 +63,15 @@ services:
       context: ./services/api-gateway
       dockerfile: Dockerfile
     container_name: nawy-api-gateway
+    env_file: .env.prod
     ports:
-      - "3001:3001"
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
     environment:
-      - PORT=3001
-      - AUTH_SERVICE_URL=http://auth-service:3002
-      - APARTMENT_SERVICE_URL=http://apartment-service:3003
-      - JWT_SECRET=${JWT_SECRET:-nawy-jwt-secret-key-change-in-production}
-      - CORS_ORIGIN=http://localhost:3000
+      - PORT=${API_GATEWAY_PORT}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - APARTMENT_SERVICE_URL=${APARTMENT_SERVICE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
     depends_on:
       - auth-service
       - apartment-service
@@ -79,11 +83,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     container_name: nawy-frontend
+    env_file: .env.prod
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     depends_on:
       - api-gateway
     networks:

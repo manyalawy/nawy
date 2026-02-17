@@ -7,10 +7,13 @@ import { Footer } from '@/components/layout/Footer';
 import { Container } from '@/components/layout/Container';
 import { ApartmentGrid } from '@/components/apartments/ApartmentGrid';
 import { SearchFilters } from '@/components/apartments/SearchFilters';
+import { CreateApartmentModal } from '@/components/apartments/CreateApartmentModal';
+import { CreateProjectModal } from '@/components/apartments/CreateProjectModal';
 import { Spinner } from '@/components/common/Spinner';
 import { Button } from '@/components/common/Button';
 import { Apartment, FilterParams } from '@/types/apartment';
 import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 const PageWrapper = styled.div`
   display: flex;
@@ -64,13 +67,26 @@ const PageInfo = styled.span`
   font-size: ${({ theme }) => theme.typography.fontSize.sm};
 `;
 
+const AdminActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.md};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
 export default function ApartmentsPage() {
+  const { user } = useAuth();
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterParams>({ page: 1, limit: 12 });
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [isCreateApartmentModalOpen, setIsCreateApartmentModalOpen] = useState(false);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
 
   const loadApartments = useCallback(async () => {
     setLoading(true);
@@ -111,6 +127,17 @@ export default function ApartmentsPage() {
               {total > 0 ? `${total} apartments available` : 'Browse our collection'}
             </Subtitle>
           </PageHeader>
+
+          {user?.role === 'ADMIN' && (
+            <AdminActions>
+              <Button onClick={() => setIsCreateApartmentModalOpen(true)}>
+                Add Apartment
+              </Button>
+              <Button variant="secondary" onClick={() => setIsCreateProjectModalOpen(true)}>
+                Add Project
+              </Button>
+            </AdminActions>
+          )}
 
           <SearchFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
@@ -155,6 +182,18 @@ export default function ApartmentsPage() {
         </Container>
       </Main>
       <Footer />
+
+      <CreateApartmentModal
+        isOpen={isCreateApartmentModalOpen}
+        onClose={() => setIsCreateApartmentModalOpen(false)}
+        onSuccess={loadApartments}
+      />
+
+      <CreateProjectModal
+        isOpen={isCreateProjectModalOpen}
+        onClose={() => setIsCreateProjectModalOpen(false)}
+        onSuccess={() => {}}
+      />
     </PageWrapper>
   );
 }

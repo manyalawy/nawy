@@ -1,0 +1,49 @@
+# Development overrides - automatically merged with docker-compose.yml
+# For production only: docker-compose -f docker-compose.yml up --build
+
+services:
+  db:
+    env_file: .env.dev
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile.dev
+    env_file: .env.dev
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
+
+  apartment-service:
+    build:
+      context: ./services/apartment-service
+      dockerfile: Dockerfile.dev
+    env_file: .env.dev
+    volumes:
+      - ./services/apartment-service:/app
+      - /app/node_modules
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile.dev
+    env_file: .env.dev
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    env_file: .env.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    environment:
+      - NODE_ENV=development

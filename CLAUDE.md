@@ -7,11 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Docker (Recommended)
 
 ```bash
-docker-compose up --build                    # Start all services
+docker-compose up --build                    # Start all services (dev mode with hot-reload)
+docker-compose -f docker-compose.yml up --build  # Production mode (no hot-reload)
 docker-compose up db -d                      # Start database only
 docker-compose exec apartment-service npm run prisma:seed  # Seed apartments
 docker-compose exec auth-service npm run prisma:seed       # Seed users
 ```
+
+**Hot-reloading**: By default, `docker-compose up` uses `docker-compose.override.yml` which enables hot-reloading. Code changes reflect immediately without rebuilding images. Each service uses `Dockerfile.dev` with volume mounts for source code.
 
 ### Local Development
 
@@ -85,6 +88,8 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 | Apartment Prisma schema | `services/apartment-service/prisma/schema.prisma` |
 | Frontend API client | `frontend/src/lib/api.ts` |
 | Auth context | `frontend/src/context/AuthContext.tsx` |
+| Docker dev overrides | `docker-compose.override.yml` |
+| Dev Dockerfiles | `services/*/Dockerfile.dev`, `frontend/Dockerfile.dev` |
 
 ## Known Issues
 
@@ -92,13 +97,21 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 
 ## Environment Variables
 
-Services use these key environment variables (configured in docker-compose.yml):
+Environment variables are managed via env files:
+- `.env.dev` - Development values (used by default with docker-compose)
+- `.env.prod` - Production values (placeholder template, must be configured)
+- `.env.example` - Reference template
 
-- `DATABASE_URL` - PostgreSQL connection string (auth-service, apartment-service)
-- `JWT_SECRET` - Shared JWT signing key (api-gateway, auth-service)
-- `AUTH_SERVICE_URL` - Auth service URL for gateway proxy
-- `APARTMENT_SERVICE_URL` - Apartment service URL for gateway proxy
-- `NEXT_PUBLIC_API_URL` - Frontend API base URL (http://localhost:3001/api/v1)
+Key variables:
+
+| Variable | Description | Used By |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | auth-service, apartment-service |
+| `JWT_SECRET` | JWT signing key | api-gateway, auth-service |
+| `AUTH_SERVICE_URL` | Auth service URL | api-gateway |
+| `APARTMENT_SERVICE_URL` | Apartment service URL | api-gateway |
+| `NEXT_PUBLIC_API_URL` | API base URL | frontend |
+| `CORS_ORIGIN` | Allowed CORS origin | all services |
 
 ## Test Accounts (after seeding)
 

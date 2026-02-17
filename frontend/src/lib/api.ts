@@ -85,6 +85,13 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  async createProject(data: Partial<Project>): Promise<{ success: boolean; data: Project }> {
+    return this.request('/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const api = new ApiClient();
