@@ -43,7 +43,6 @@ A full-stack apartment listing application built with microservices architecture
 ### Prerequisites
 
 - Docker and Docker Compose
-- Node.js 20+ (for local development)
 
 ### Running with Docker (Recommended)
 
@@ -129,53 +128,6 @@ After seeding, you can use these accounts:
 - `bedrooms` - Filter by bedroom count
 - `minPrice` / `maxPrice` - Price range
 - `page` / `limit` - Pagination
-
-## Local Development
-
-### Install Dependencies
-
-```bash
-# Install all service dependencies
-cd services/auth-service && npm install
-cd ../apartment-service && npm install
-cd ../api-gateway && npm install
-cd ../../frontend && npm install
-```
-
-### Set Up Environment
-
-```bash
-cp .env.example .env
-```
-
-### Start Database
-
-```bash
-docker-compose up db -d
-```
-
-### Run Migrations
-
-```bash
-cd services/auth-service && npm run prisma:migrate:dev
-cd ../apartment-service && npm run prisma:migrate:dev
-```
-
-### Start Services
-
-```bash
-# Terminal 1 - Auth Service
-cd services/auth-service && npm run start:dev
-
-# Terminal 2 - Apartment Service
-cd services/apartment-service && npm run start:dev
-
-# Terminal 3 - API Gateway
-cd services/api-gateway && npm run start:dev
-
-# Terminal 4 - Frontend
-cd frontend && npm run dev
-```
 
 ## Project Structure
 

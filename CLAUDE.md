@@ -16,26 +16,6 @@ docker-compose exec auth-service npm run prisma:seed       # Seed users
 
 **Hot-reloading**: By default, `docker-compose up` uses `docker-compose.override.yml` which enables hot-reloading. Code changes reflect immediately without rebuilding images. Each service uses `Dockerfile.dev` with volume mounts for source code.
 
-### Local Development
-
-Each service is an independent Node.js project - install dependencies separately:
-
-```bash
-cd services/auth-service && npm install
-cd services/apartment-service && npm install
-cd services/api-gateway && npm install
-cd frontend && npm install
-```
-
-Run services (each in separate terminal):
-
-```bash
-cd services/auth-service && npm run start:dev       # Port 3002
-cd services/apartment-service && npm run start:dev  # Port 3003
-cd services/api-gateway && npm run start:dev        # Port 3001
-cd frontend && npm run dev                          # Port 3000
-```
-
 ### Prisma Commands (auth-service and apartment-service)
 
 ```bash
