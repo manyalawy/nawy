@@ -81,7 +81,7 @@ services:
       dockerfile: Dockerfile
     container_name: nawy-frontend
     ports:
-      - "3004:3000"
+      - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
     depends_on:
