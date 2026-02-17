@@ -19,6 +19,19 @@ services:
     networks:
       - nawy-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: nawy-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nawy-network
+
   auth-service:
     build:
       context: ./services/auth-service
@@ -72,9 +85,11 @@ services:
       - APARTMENT_SERVICE_URL=${APARTMENT_SERVICE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ORIGIN=${CORS_ORIGIN}
+      - REDIS_URL=${REDIS_URL}
     depends_on:
       - auth-service
       - apartment-service
+      - redis
     networks:
       - nawy-network
     restart: unless-stopped

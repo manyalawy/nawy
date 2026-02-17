@@ -12,28 +12,35 @@ A full-stack apartment listing application built with microservices architecture
                     └────────┬────────┘
                              │
                     ┌────────▼────────┐
-                    │   API Gateway   │
-                    │   (NestJS)      │
-                    │   Port: 3001    │
-                    └────────┬────────┘
-                             │
-          ┌──────────────────┼──────────────────┐
-          │                  │                  │
-┌─────────▼─────────┐ ┌──────▼──────┐  ┌───────▼───────┐
-│   Auth Service    │ │  Apartment  │  │    Shared     │
-│   (NestJS)        │ │  Service    │  │   PostgreSQL  │
-│   Port: 3002      │ │  Port: 3003 │  │   Port: 5432  │
-└───────────────────┘ └─────────────┘  └───────────────┘
+                    │   API Gateway   │◄────┐
+                    │   (NestJS)      │     │
+                    │   Port: 3001    │     │
+                    └────────┬────────┘     │
+                             │              │
+          ┌──────────────────┼──────────────┼───────┐
+          │                  │              │       │
+┌─────────▼─────────┐ ┌──────▼──────┐  ┌────▼────┐  │
+│   Auth Service    │ │  Apartment  │  │  Redis  │──┘
+│   (NestJS)        │ │  Service    │  │  :6379  │ (rate limiting)
+│   Port: 3002      │ │  Port: 3003 │  └─────────┘
+└─────────┬─────────┘ └──────┬──────┘
+          │                  │
+          └────────┬─────────┘
+           ┌───────▼───────┐
+           │   PostgreSQL  │
+           │   Port: 5432  │
+           └───────────────┘
 ```
 
 ## Technology Stack
 
 | Component | Technology |
 |-----------|------------|
-| API Gateway | NestJS, Swagger |
+| API Gateway | NestJS, Swagger, @nestjs/throttler |
 | Auth Service | NestJS, JWT, bcrypt |
 | Apartment Service | NestJS, Prisma |
 | Database | PostgreSQL 16 |
+| Cache/Rate Limiting | Redis 7 |
 | Frontend | Next.js 14 (App Router) |
 | Styling | styled-components |
 | Container | Docker, Docker Compose |
@@ -179,6 +186,9 @@ nawy-apartments/
 - Role-based access control (USER, ADMIN)
 - Input validation on all endpoints
 - CORS configuration
+- **Rate limiting** (Redis-backed via @nestjs/throttler):
+  - Default: 60 requests/minute for all endpoints
+  - Strict: 5 requests/minute for auth endpoints (login, register, refresh)
 
 ## Environment Variables
 
@@ -200,6 +210,7 @@ The project uses separate environment files for development and production:
 Key variables:
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - Secret key for JWT signing (change in production!)
+- `REDIS_URL` - Redis connection string for rate limiting
 - `NEXT_PUBLIC_API_URL` - API URL for frontend
 - `CORS_ORIGIN` - Allowed CORS origin
 

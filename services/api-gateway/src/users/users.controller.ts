@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { firstValueFrom } from 'rxjs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
@@ -27,6 +28,7 @@ export class UsersController {
 
   @Post('register')
   @Public()
+  @Throttle({ strict: {} })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
   async register(@Body() dto: RegisterDto) {
@@ -46,6 +48,7 @@ export class UsersController {
 
   @Post('login')
   @Public()
+  @Throttle({ strict: {} })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login and get JWT tokens' })
   async login(@Body() dto: LoginDto) {
@@ -88,6 +91,7 @@ export class UsersController {
 
   @Post('refresh')
   @Public()
+  @Throttle({ strict: {} })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
   async refresh(@Body('refreshToken') refreshToken: string) {

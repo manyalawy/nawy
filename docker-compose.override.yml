@@ -47,3 +47,6 @@ services:
     command: npm run dev
     environment:
       - NODE_ENV=development
+
+  redis:
+    env_file: .env

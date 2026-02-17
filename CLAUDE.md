@@ -55,12 +55,16 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 - **`@Public()` decorator**: Bypasses the global auth guard for public endpoints (login, register, apartment listing).
 - **`@Roles()` decorator + `RolesGuard`**: Admin-only endpoints (POST /apartments, POST /projects).
 - **HTTP proxying**: Gateway uses `@nestjs/axios` to proxy requests to backend services via `AUTH_SERVICE_URL` and `APARTMENT_SERVICE_URL` environment variables.
+- **Rate limiting**: Redis-backed rate limiting via `@nestjs/throttler` at the API Gateway. Configured with two tiers:
+  - `default`: 60 requests/minute (all endpoints)
+  - `strict`: 5 requests/minute (auth endpoints: login, register, refresh)
 
 ## Key Files
 
 | Purpose | Path |
 |---------|------|
 | API Gateway auth guard | `services/api-gateway/src/auth/jwt.strategy.ts` |
+| Rate limiter config | `services/api-gateway/src/app.module.ts` |
 | Gateway controllers | `services/api-gateway/src/apartments/`, `services/api-gateway/src/users/` |
 | Auth Service logic | `services/auth-service/src/modules/auth/auth.service.ts` |
 | Apartment Service logic | `services/apartment-service/src/modules/apartments/apartments.service.ts` |
@@ -90,6 +94,7 @@ Key variables:
 | `JWT_SECRET` | JWT signing key | api-gateway, auth-service |
 | `AUTH_SERVICE_URL` | Auth service URL | api-gateway |
 | `APARTMENT_SERVICE_URL` | Apartment service URL | api-gateway |
+| `REDIS_URL` | Redis connection string for rate limiting | api-gateway |
 | `NEXT_PUBLIC_API_URL` | API base URL | frontend |
 | `CORS_ORIGIN` | Allowed CORS origin | all services |
 
