@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String?
+  location    String
+  developer   String?
+  apartments  Apartment[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("projects")
+}
+
+model Apartment {
+  id          String          @id @default(uuid())
+  unitName    String
+  unitNumber  String
+  projectId   String
+  price       Decimal         @db.Decimal(12, 2)
+  area        Decimal         @db.Decimal(10, 2)
+  bedrooms    Int
+  bathrooms   Int
+  floor       Int?
+  description String?
+  features    String[]
+  images      String[]
+  status      ApartmentStatus @default(AVAILABLE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("apartments")
+}
+
+enum ApartmentStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}

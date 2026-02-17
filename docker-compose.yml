@@ -1,0 +1,98 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nawy-db
+    environment:
+      POSTGRES_USER: nawy
+      POSTGRES_PASSWORD: nawy_secret
+      POSTGRES_DB: nawy_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nawy -d nawy_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nawy-network
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: nawy-auth-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - DATABASE_URL=postgresql://nawy:nawy_secret@db:5432/nawy_db
+      - JWT_SECRET=${JWT_SECRET:-nawy-jwt-secret-key-change-in-production}
+      - CORS_ORIGIN=http://localhost:3004
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - nawy-network
+    restart: unless-stopped
+
+  apartment-service:
+    build:
+      context: ./services/apartment-service
+      dockerfile: Dockerfile
+    container_name: nawy-apartment-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - DATABASE_URL=postgresql://nawy:nawy_secret@db:5432/nawy_db
+      - CORS_ORIGIN=http://localhost:3004
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - nawy-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: nawy-api-gateway
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - AUTH_SERVICE_URL=http://auth-service:3002
+      - APARTMENT_SERVICE_URL=http://apartment-service:3003
+      - JWT_SECRET=${JWT_SECRET:-nawy-jwt-secret-key-change-in-production}
+      - CORS_ORIGIN=http://localhost:3004
+    depends_on:
+      - auth-service
+      - apartment-service
+    networks:
+      - nawy-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nawy-frontend
+    ports:
+      - "3004:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+    depends_on:
+      - api-gateway
+    networks:
+      - nawy-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  nawy-network:
+    driver: bridge
