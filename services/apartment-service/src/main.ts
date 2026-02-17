@@ -21,7 +21,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 3003;
+  const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Apartment Service is running on port ${port}`);
 }

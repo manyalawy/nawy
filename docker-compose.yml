@@ -67,7 +67,7 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:3002
       - APARTMENT_SERVICE_URL=http://apartment-service:3003
       - JWT_SECRET=${JWT_SECRET:-nawy-jwt-secret-key-change-in-production}
-      - CORS_ORIGIN=http://localhost:3004
+      - CORS_ORIGIN=http://localhost:3000
     depends_on:
       - auth-service
       - apartment-service
