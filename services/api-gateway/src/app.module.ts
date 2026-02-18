@@ -12,7 +12,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
   imports: [
     ThrottlerModule.forRoot({
       throttlers: [
-        { name: 'strict', ttl: 60000, limit: 5 },
+        { name: 'default', ttl: 60000, limit: 5 },
       ],
       storage: new ThrottlerStorageRedisService(process.env.REDIS_URL),
     }),
