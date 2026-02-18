@@ -11,21 +11,19 @@ Always use Context7 MCP for fetching up-to-date documentation when working with 
 ### Docker (Recommended)
 
 ```bash
-docker-compose up --build                    # Start all services (dev mode with hot-reload)
-docker-compose -f docker-compose.yml up --build  # Production mode (no hot-reload)
+docker-compose up --build                    # Start all services (with hot-reload)
 docker-compose up db -d                      # Start database only
 docker-compose exec apartment-service npm run prisma:seed  # Seed apartments
 docker-compose exec auth-service npm run prisma:seed       # Seed users
 ```
 
-**Hot-reloading**: By default, `docker-compose up` uses `docker-compose.override.yml` which enables hot-reloading. Code changes reflect immediately without rebuilding images. Each service uses `Dockerfile.dev` with volume mounts for source code.
+**Hot-reloading**: Code changes reflect immediately without rebuilding images. Each service uses volume mounts for source code.
 
 ### Prisma Commands (auth-service and apartment-service)
 
 ```bash
 npm run prisma:generate      # Generate Prisma client
-npm run prisma:migrate:dev   # Run migrations (development)
-npm run prisma:migrate       # Run migrations (production)
+npm run prisma:migrate:dev   # Run migrations
 npm run prisma:seed          # Seed database
 ```
 
@@ -81,8 +79,7 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 | Apartment Prisma schema | `services/apartment-service/prisma/schema.prisma` |
 | Frontend API client | `frontend/src/lib/api.ts` |
 | Auth context | `frontend/src/context/AuthContext.tsx` |
-| Docker dev overrides | `docker-compose.override.yml` |
-| Dev Dockerfiles | `services/*/Dockerfile.dev`, `frontend/Dockerfile.dev` |
+| Docker config | `docker-compose.yml` |
 
 ## Known Issues
 
@@ -90,12 +87,7 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 
 ## Environment Variables
 
-Environment variables are managed via env files:
-- `.env` - Development values (used by default with docker-compose)
-- `.env.prod` - Production values (placeholder template, must be configured)
-- `.env.example` - Reference template
-
-Key variables:
+Environment variables are configured in `.env`. Key variables:
 
 | Variable | Description | Used By |
 |----------|-------------|---------|

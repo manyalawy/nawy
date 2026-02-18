@@ -76,19 +76,13 @@ docker-compose up --build
 
 ### Development with Hot-Reloading
 
-By default, `docker-compose up` enables hot-reloading for all services. Code changes reflect immediately without rebuilding images.
+Hot-reloading is enabled for all services. Code changes reflect immediately without rebuilding images.
 
 ```bash
-# Development mode (with hot-reload) - default
 docker-compose up --build
-
-# Production mode (no hot-reload)
-docker-compose -f docker-compose.yml up --build
 ```
 
 The development setup uses:
-- `docker-compose.override.yml` - Overrides with volume mounts and dev commands
-- `Dockerfile.dev` files - Simplified dev containers for each service
 - Volume mounts - Sync local source files into containers
 - Watch mode - NestJS (`nest start --watch`) and Next.js (`next dev`)
 
@@ -157,25 +151,18 @@ After seeding, you can use these accounts:
 
 ```
 nawy-apartments/
-├── docker-compose.yml          # Production Docker config
-├── docker-compose.override.yml # Development overrides (hot-reload)
-├── .env.dev                    # Development environment variables
-├── .env.prod                   # Production environment variables (configure!)
-├── .env.example                # Environment variable template
+├── docker-compose.yml          # Docker configuration
+├── .env                        # Environment variables
 ├── README.md
 ├── services/
 │   ├── api-gateway/            # API Gateway (NestJS)
-│   │   ├── Dockerfile          # Production Dockerfile
-│   │   └── Dockerfile.dev      # Development Dockerfile
+│   │   └── Dockerfile
 │   ├── auth-service/           # Auth Service (NestJS)
-│   │   ├── Dockerfile
-│   │   └── Dockerfile.dev
+│   │   └── Dockerfile
 │   └── apartment-service/      # Apartment Service (NestJS)
-│       ├── Dockerfile
-│       └── Dockerfile.dev
+│       └── Dockerfile
 ├── frontend/                   # Next.js Frontend
 │   ├── Dockerfile
-│   ├── Dockerfile.dev
 │   └── src/
 │       ├── app/                # App Router pages
 │       ├── components/         # React components
@@ -215,27 +202,13 @@ nawy-apartments/
 
 ## Environment Variables
 
-The project uses separate environment files for development and production:
+Environment variables are configured in `.env`. Key variables:
 
-| File | Purpose |
-|------|---------|
-| `.env.dev` | Development configuration (used by default) |
-| `.env.prod` | Production configuration (requires setup) |
-| `.env.example` | Reference template |
-
-**Development** runs automatically with `.env.dev` values.
-
-**Production** requires configuring `.env.prod`:
-1. Copy placeholder values: `cp .env.prod .env.prod.local`
-2. Update with real values (database URL, JWT secret, domains)
-3. Run: `docker-compose -f docker-compose.yml --env-file .env.prod up --build`
-
-Key variables:
 - `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - Secret key for JWT signing (change in production!)
+- `JWT_SECRET` - Secret key for JWT signing
 - `REDIS_URL` - Redis connection string for rate limiting
 - `MEILISEARCH_URL` - Meilisearch connection URL
-- `MEILISEARCH_MASTER_KEY` - Meilisearch API key (change in production!)
+- `MEILISEARCH_MASTER_KEY` - Meilisearch API key
 - `NEXT_PUBLIC_API_URL` - API URL for frontend
 - `CORS_ORIGIN` - Allowed CORS origin
 

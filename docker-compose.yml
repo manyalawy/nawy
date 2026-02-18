@@ -1,27 +1,20 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: nawy-db
-    env_file: .env.prod
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    env_file: .env
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U nawy -d nawy_db"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - nawy-network
 
   redis:
     image: redis:7-alpine
-    container_name: nawy-redis
+    env_file: .env
     ports:
       - "6379:6379"
     healthcheck:
@@ -29,117 +22,88 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - nawy-network
 
   meilisearch:
     image: getmeili/meilisearch:v1.6
-    container_name: nawy-meilisearch
-    env_file: .env.prod
-    environment:
-      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
-      - MEILI_ENV=production
-      - MEILI_NO_ANALYTICS=true
-    volumes:
-      - meilisearch_data:/meili_data
+    env_file: .env
     ports:
       - "7700:7700"
+    environment:
+      - MEILI_ENV=development
+      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
+    volumes:
+      - meilisearch_data:/meili_data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - nawy-network
 
   auth-service:
     build:
       context: ./services/auth-service
       dockerfile: Dockerfile
-    container_name: nawy-auth-service
-    env_file: .env.prod
+    env_file: .env
     ports:
       - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
-    environment:
-      - PORT=${AUTH_SERVICE_PORT}
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - CORS_ORIGIN=${CORS_ORIGIN}
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - nawy-network
-    restart: unless-stopped
 
   apartment-service:
     build:
       context: ./services/apartment-service
       dockerfile: Dockerfile
-    container_name: nawy-apartment-service
-    env_file: .env.prod
+    env_file: .env
     ports:
       - "${APARTMENT_SERVICE_PORT}:${APARTMENT_SERVICE_PORT}"
-    environment:
-      - PORT=${APARTMENT_SERVICE_PORT}
-      - DATABASE_URL=${DATABASE_URL}
-      - CORS_ORIGIN=${CORS_ORIGIN}
-      - MEILISEARCH_URL=${MEILISEARCH_URL}
-      - MEILISEARCH_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
+    volumes:
+      - ./services/apartment-service:/app
+      - /app/node_modules
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
     depends_on:
       db:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
-    networks:
-      - nawy-network
-    restart: unless-stopped
 
   api-gateway:
     build:
       context: ./services/api-gateway
       dockerfile: Dockerfile
-    container_name: nawy-api-gateway
-    env_file: .env.prod
+    env_file: .env
     ports:
       - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
-    environment:
-      - PORT=${API_GATEWAY_PORT}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
-      - APARTMENT_SERVICE_URL=${APARTMENT_SERVICE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - CORS_ORIGIN=${CORS_ORIGIN}
-      - REDIS_URL=${REDIS_URL}
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+    command: npm run start:dev
     depends_on:
       - auth-service
       - apartment-service
       - redis
-    networks:
-      - nawy-network
-    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-    container_name: nawy-frontend
-    env_file: .env.prod
+    env_file: .env
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=development
     depends_on:
       - api-gateway
-    networks:
-      - nawy-network
-    restart: unless-stopped
 
 volumes:
   postgres_data:
   meilisearch_data:
-
-networks:
-  nawy-network:
-    driver: bridge

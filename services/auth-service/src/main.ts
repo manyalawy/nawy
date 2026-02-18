@@ -18,7 +18,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 3002;
+  const port = process.env.AUTH_SERVICE_PORT || 3002;
   await app.listen(port);
   console.log(`Auth Service is running on port ${port}`);
 }
