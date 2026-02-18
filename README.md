@@ -17,24 +17,28 @@ A full-stack apartment listing application built with microservices architecture
                     │   Port: 3001    │     │
                     └────────┬────────┘     │
                              │              │
-          ┌──────────────────┼──────────────┼───────┐
-          │                  │              │       │
-┌─────────▼─────────┐ ┌──────▼──────┐  ┌────▼────┐  │
-│   Auth Service    │ │  Apartment  │  │  Redis  │──┘
-│   (NestJS)        │ │  Service    │  │  :6379  │ (rate limiting)
-│   Port: 3002      │ │  Port: 3003 │  └─────────┘
-└─────────┬─────────┘ └──────┬──────┘
-          │                  │
-          │           ┌──────▼──────┐
-          │           │ Meilisearch │ (full-text search)
-          │           │   :7700     │
-          │           └──────┬──────┘
-          └────────┬─────────┘
-           ┌───────▼───────┐
-           │   PostgreSQL  │
-           │   Port: 5432  │
-           └───────────────┘
+    ┌────────────────────────┼──────────────┼────────────────┐
+    │ Docker Network         │              │                │
+    │ (internal only)        │              │                │
+    │  ┌─────────────────┐ ┌─▼────────────┐ ┌▼─────────────┐ │
+    │  │  Auth Service   │ │  Apartment   │ │    Redis     │─┘
+    │  │  (NestJS)       │ │  Service     │ │  (internal)  │
+    │  │  :3002          │ │  :3003       │ └──────────────┘
+    │  └────────┬────────┘ └──────┬───────┘                  │
+    │           │                 │                          │
+    │           │          ┌──────▼──────┐                   │
+    │           │          │ Meilisearch │ (full-text search)│
+    │           │          │   :7700     │                   │
+    │           │          └──────┬──────┘                   │
+    │           └────────┬────────┘                          │
+    │            ┌───────▼───────┐                           │
+    │            │   PostgreSQL  │                           │
+    │            │   :5432       │                           │
+    │            └───────────────┘                           │
+    └────────────────────────────────────────────────────────┘
 ```
+
+**Note:** Auth Service, Apartment Service, and Redis are only accessible within the Docker network. External access is only through the API Gateway (port 3001) and Frontend (port 3000). PostgreSQL and Meilisearch are exposed for development tooling.
 
 ## Technology Stack
 
@@ -198,15 +202,18 @@ nawy-apartments/
 - CORS configuration
 - **Rate limiting** (Redis-backed via @nestjs/throttler):
   - 5 requests/minute for auth endpoints (login, register, refresh)
-  - No rate limiting on other endpoints
+- **Network isolation**: Internal services (auth-service, apartment-service, Redis) are only accessible within the Docker network, not from the host machine. All external requests must go through the API Gateway.
+- **Required environment validation**: Services fail fast on startup if required environment variables (e.g., `JWT_SECRET`) are missing.
+- **Redis authentication**: Redis requires password authentication via `REDIS_PASSWORD`.
 
 ## Environment Variables
 
 Environment variables are configured in `.env`. Key variables:
 
 - `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - Secret key for JWT signing
-- `REDIS_URL` - Redis connection string for rate limiting
+- `JWT_SECRET` - Secret key for JWT signing (required)
+- `REDIS_PASSWORD` - Redis authentication password
+- `REDIS_URL` - Redis connection string (includes password)
 - `MEILISEARCH_URL` - Meilisearch connection URL
 - `MEILISEARCH_MASTER_KEY` - Meilisearch API key
 - `NEXT_PUBLIC_API_URL` - API URL for frontend

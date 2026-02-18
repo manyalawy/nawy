@@ -43,14 +43,16 @@ Frontend (Next.js :3000)
     ▼
 API Gateway (NestJS :3001)  ← JWT validation happens here
     │
-    ├──► Auth Service (:3002)      → User/Auth Prisma schema
+    ├──► Auth Service (internal :3002)      → User/Auth Prisma schema
     │
-    └──► Apartment Service (:3003) → Apartment/Project Prisma schema
+    └──► Apartment Service (internal :3003) → Apartment/Project Prisma schema
             │
             ├──► Meilisearch (:7700)  ← Full-text search engine
             │
             └──► PostgreSQL (:5432)   ← Source of truth (nawy_db)
 ```
+
+**Note:** Auth Service, Apartment Service, and Redis are internal to the Docker network (not exposed to host). All external requests go through the API Gateway.
 
 **Key architectural patterns:**
 
@@ -81,6 +83,15 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 | Auth context | `frontend/src/context/AuthContext.tsx` |
 | Docker config | `docker-compose.yml` |
 
+## Security
+
+**Network isolation**: Internal services (auth-service, apartment-service, Redis) are not exposed to the host machine. They communicate only within the Docker network, accessible via the API Gateway.
+
+**Required environment variables**: Services validate required environment variables at startup and fail fast if missing:
+- `JWT_SECRET` is required for both api-gateway and auth-service
+
+**Redis authentication**: Redis requires password authentication. The password is configured via `REDIS_PASSWORD` environment variable.
+
 ## Known Issues
 
 **Migration naming conflict**: Both services share the same PostgreSQL database and `_prisma_migrations` table. Migration folder names must be unique across services to avoid conflicts where one service's migration is skipped because another service already recorded a migration with the same name.
@@ -92,10 +103,11 @@ Environment variables are configured in `.env`. Key variables:
 | Variable | Description | Used By |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | auth-service, apartment-service |
-| `JWT_SECRET` | JWT signing key | api-gateway, auth-service |
+| `JWT_SECRET` | JWT signing key (required) | api-gateway, auth-service |
 | `AUTH_SERVICE_URL` | Auth service URL | api-gateway |
 | `APARTMENT_SERVICE_URL` | Apartment service URL | api-gateway |
-| `REDIS_URL` | Redis connection string for rate limiting | api-gateway |
+| `REDIS_PASSWORD` | Redis authentication password | redis, api-gateway |
+| `REDIS_URL` | Redis connection string (includes password) | api-gateway |
 | `MEILISEARCH_URL` | Meilisearch connection URL | apartment-service |
 | `MEILISEARCH_MASTER_KEY` | Meilisearch API key | apartment-service |
 | `NEXT_PUBLIC_API_URL` | API base URL | frontend |
