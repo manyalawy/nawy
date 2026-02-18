@@ -178,6 +178,7 @@ nawy-apartments/
 - **Apartment Details**: View detailed apartment information
 - **Responsive Design**: Mobile-friendly interface
 - **Admin Features**: Create apartments (admin only)
+- **API Documentation**: Interactive Swagger UI at `localhost:3001/api/docs`
 
 ## Security
 
@@ -187,8 +188,8 @@ nawy-apartments/
 - Input validation on all endpoints
 - CORS configuration
 - **Rate limiting** (Redis-backed via @nestjs/throttler):
-  - Default: 60 requests/minute for all endpoints
-  - Strict: 5 requests/minute for auth endpoints (login, register, refresh)
+  - 5 requests/minute for auth endpoints (login, register, refresh)
+  - No rate limiting on other endpoints
 
 ## Environment Variables
 

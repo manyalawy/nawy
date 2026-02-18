@@ -55,9 +55,7 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 - **`@Public()` decorator**: Bypasses the global auth guard for public endpoints (login, register, apartment listing).
 - **`@Roles()` decorator + `RolesGuard`**: Admin-only endpoints (POST /apartments, POST /projects).
 - **HTTP proxying**: Gateway uses `@nestjs/axios` to proxy requests to backend services via `AUTH_SERVICE_URL` and `APARTMENT_SERVICE_URL` environment variables.
-- **Rate limiting**: Redis-backed rate limiting via `@nestjs/throttler` at the API Gateway. Configured with two tiers:
-  - `default`: 60 requests/minute (all endpoints)
-  - `strict`: 5 requests/minute (auth endpoints: login, register, refresh)
+- **Rate limiting**: Redis-backed rate limiting via `@nestjs/throttler` at the API Gateway. Applied only to auth endpoints (login, register, refresh) at 5 requests/minute.
 
 ## Key Files
 
