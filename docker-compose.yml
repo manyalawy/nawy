@@ -15,10 +15,11 @@ services:
   redis:
     image: redis:7-alpine
     env_file: .env
-    ports:
-      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    expose:
+      - "6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -44,8 +45,8 @@ services:
       context: ./services/auth-service
       dockerfile: Dockerfile
     env_file: .env
-    ports:
-      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
+    expose:
+      - "${AUTH_SERVICE_PORT}"
     volumes:
       - ./services/auth-service:/app
       - /app/node_modules
@@ -59,8 +60,8 @@ services:
       context: ./services/apartment-service
       dockerfile: Dockerfile
     env_file: .env
-    ports:
-      - "${APARTMENT_SERVICE_PORT}:${APARTMENT_SERVICE_PORT}"
+    expose:
+      - "${APARTMENT_SERVICE_PORT}"
     volumes:
       - ./services/apartment-service:/app
       - /app/node_modules

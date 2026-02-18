@@ -9,7 +9,7 @@ import { RolesGuard } from './roles.guard';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'nawy-secret-key',
+      secret: process.env.JWT_SECRET,
     }),
   ],
   providers: [JwtStrategy, JwtAuthGuard, RolesGuard],
