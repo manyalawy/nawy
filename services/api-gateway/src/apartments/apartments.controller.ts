@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Param,
   Query,
   Body,
@@ -94,6 +96,47 @@ export class ApartmentsController {
     }
   }
 
+  @Put('apartments/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update an apartment (Admin only)' })
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateApartmentDto>) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put(`${this.apartmentServiceUrl}/apartments/${id}`, dto),
+      );
+      return response.data;
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: unknown } };
+      throw new HttpException(
+        err.response?.data || 'Failed to update apartment',
+        err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete('apartments/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete an apartment (Admin only)' })
+  async delete(@Param('id') id: string) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.delete(`${this.apartmentServiceUrl}/apartments/${id}`),
+      );
+      return response.data;
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: unknown } };
+      throw new HttpException(
+        err.response?.data || 'Failed to delete apartment',
+        err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('projects')
   @Public()
   @ApiOperation({ summary: 'List all projects' })
@@ -128,6 +171,87 @@ export class ApartmentsController {
       const err = error as { response?: { status?: number; data?: unknown } };
       throw new HttpException(
         err.response?.data || 'Failed to create project',
+        err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put('projects/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a project (Admin only)' })
+  async updateProject(@Param('id') id: string, @Body() dto: Partial<CreateProjectDto>) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put(`${this.apartmentServiceUrl}/projects/${id}`, dto),
+      );
+      return response.data;
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: unknown } };
+      throw new HttpException(
+        err.response?.data || 'Failed to update project',
+        err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('admin/search/reindex')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Trigger full search reindex (Admin only)' })
+  async reindex() {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.apartmentServiceUrl}/admin/search/reindex`),
+      );
+      return response.data;
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: unknown } };
+      throw new HttpException(
+        err.response?.data || 'Failed to trigger reindex',
+        err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('admin/search/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get search index statistics (Admin only)' })
+  async getSearchStats() {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.apartmentServiceUrl}/admin/search/stats`),
+      );
+      return response.data;
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: unknown } };
+      throw new HttpException(
+        err.response?.data || 'Failed to get search stats',
+        err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('admin/search/health')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check search engine health (Admin only)' })
+  async getSearchHealth() {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.apartmentServiceUrl}/admin/search/health`),
+      );
+      return response.data;
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: unknown } };
+      throw new HttpException(
+        err.response?.data || 'Failed to get search health',
         err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

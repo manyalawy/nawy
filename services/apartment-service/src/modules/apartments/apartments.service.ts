@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { ApartmentsSearchService } from './apartments-search.service';
+import { ApartmentsSyncService } from './apartments-sync.service';
 import {
   FilterApartmentsDto,
   CreateApartmentDto,
@@ -9,73 +10,17 @@ import {
 
 @Injectable()
 export class ApartmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ApartmentsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly searchService: ApartmentsSearchService,
+    private readonly syncService: ApartmentsSyncService,
+  ) {}
 
   async findAll(filters: FilterApartmentsDto) {
-    const { search, projectId, bedrooms, minPrice, maxPrice, status, page = 1, limit = 10 } = filters;
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.ApartmentWhereInput = {};
-
-    if (search) {
-      where.OR = [
-        { unitName: { contains: search, mode: 'insensitive' } },
-        { unitNumber: { contains: search, mode: 'insensitive' } },
-        { project: { name: { contains: search, mode: 'insensitive' } } },
-      ];
-    }
-
-    if (projectId) {
-      where.projectId = projectId;
-    }
-
-    if (bedrooms !== undefined) {
-      where.bedrooms = bedrooms;
-    }
-
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      where.price = {};
-      if (minPrice !== undefined) {
-        where.price.gte = minPrice;
-      }
-      if (maxPrice !== undefined) {
-        where.price.lte = maxPrice;
-      }
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    const [apartments, total] = await Promise.all([
-      this.prisma.apartment.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          project: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-      this.prisma.apartment.count({ where }),
-    ]);
-
-    return {
-      success: true,
-      data: apartments.map((apt) => ({
-        ...apt,
-        price: Number(apt.price),
-        area: Number(apt.area),
-      })),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    // Delegate to search service (handles Meilisearch/Prisma routing)
+    return this.searchService.search(filters);
   }
 
   async findOne(id: string) {
@@ -128,6 +73,11 @@ export class ApartmentsService {
       },
     });
 
+    // Sync to Meilisearch (non-blocking)
+    this.syncService
+      .syncSingleApartment(apartment.id)
+      .catch((err) => this.logger.error(`Failed to sync apartment ${apartment.id}`, err));
+
     return {
       success: true,
       data: {
@@ -136,6 +86,49 @@ export class ApartmentsService {
         area: Number(apartment.area),
       },
     };
+  }
+
+  async update(id: string, dto: Partial<CreateApartmentDto>) {
+    const existing = await this.prisma.apartment.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Apartment with ID ${id} not found`);
+    }
+
+    const apartment = await this.prisma.apartment.update({
+      where: { id },
+      data: dto,
+      include: { project: true },
+    });
+
+    // Sync to Meilisearch (non-blocking)
+    this.syncService
+      .syncSingleApartment(apartment.id)
+      .catch((err) => this.logger.error(`Failed to sync apartment ${apartment.id}`, err));
+
+    return {
+      success: true,
+      data: {
+        ...apartment,
+        price: Number(apartment.price),
+        area: Number(apartment.area),
+      },
+    };
+  }
+
+  async delete(id: string) {
+    const existing = await this.prisma.apartment.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Apartment with ID ${id} not found`);
+    }
+
+    await this.prisma.apartment.delete({ where: { id } });
+
+    // Remove from Meilisearch (non-blocking)
+    this.syncService
+      .removeFromIndex(id)
+      .catch((err) => this.logger.error(`Failed to remove apartment ${id} from index`, err));
+
+    return { success: true };
   }
 
   async findAllProjects() {
@@ -155,6 +148,28 @@ export class ApartmentsService {
     const project = await this.prisma.project.create({
       data: dto,
     });
+
+    return {
+      success: true,
+      data: project,
+    };
+  }
+
+  async updateProject(id: string, dto: Partial<CreateProjectDto>) {
+    const existing = await this.prisma.project.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+
+    const project = await this.prisma.project.update({
+      where: { id },
+      data: dto,
+    });
+
+    // Reindex all apartments in this project (project data is denormalized in search)
+    this.syncService
+      .syncProjectApartments(id)
+      .catch((err) => this.logger.error(`Failed to sync project ${id} apartments`, err));
 
     return {
       success: true,

@@ -32,6 +32,26 @@ services:
     networks:
       - nawy-network
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    container_name: nawy-meilisearch
+    env_file: .env.prod
+    environment:
+      - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
+      - MEILI_ENV=production
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - meilisearch_data:/meili_data
+    ports:
+      - "7700:7700"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nawy-network
+
   auth-service:
     build:
       context: ./services/auth-service
@@ -64,8 +84,12 @@ services:
       - PORT=${APARTMENT_SERVICE_PORT}
       - DATABASE_URL=${DATABASE_URL}
       - CORS_ORIGIN=${CORS_ORIGIN}
+      - MEILISEARCH_URL=${MEILISEARCH_URL}
+      - MEILISEARCH_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
     depends_on:
       db:
+        condition: service_healthy
+      meilisearch:
         condition: service_healthy
     networks:
       - nawy-network
@@ -114,6 +138,7 @@ services:
 
 volumes:
   postgres_data:
+  meilisearch_data:
 
 networks:
   nawy-network:

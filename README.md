@@ -25,6 +25,10 @@ A full-stack apartment listing application built with microservices architecture
 │   Port: 3002      │ │  Port: 3003 │  └─────────┘
 └─────────┬─────────┘ └──────┬──────┘
           │                  │
+          │           ┌──────▼──────┐
+          │           │ Meilisearch │ (full-text search)
+          │           │   :7700     │
+          │           └──────┬──────┘
           └────────┬─────────┘
            ┌───────▼───────┐
            │   PostgreSQL  │
@@ -38,8 +42,9 @@ A full-stack apartment listing application built with microservices architecture
 |-----------|------------|
 | API Gateway | NestJS, Swagger, @nestjs/throttler |
 | Auth Service | NestJS, JWT, bcrypt |
-| Apartment Service | NestJS, Prisma |
+| Apartment Service | NestJS, Prisma, Meilisearch |
 | Database | PostgreSQL 16 |
+| Search Engine | Meilisearch v1.6 |
 | Cache/Rate Limiting | Redis 7 |
 | Frontend | Next.js 14 (App Router) |
 | Styling | styled-components |
@@ -126,11 +131,23 @@ After seeding, you can use these accounts:
 | GET | `/api/v1/apartments` | List apartments | Public |
 | GET | `/api/v1/apartments/:id` | Get details | Public |
 | POST | `/api/v1/apartments` | Create apartment | Admin |
+| PUT | `/api/v1/apartments/:id` | Update apartment | Admin |
+| DELETE | `/api/v1/apartments/:id` | Delete apartment | Admin |
 | GET | `/api/v1/projects` | List projects | Public |
+| POST | `/api/v1/projects` | Create project | Admin |
+| PUT | `/api/v1/projects/:id` | Update project | Admin |
+
+### Search Admin (Admin only)
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/v1/admin/search/reindex` | Trigger full reindex | Admin |
+| GET | `/api/v1/admin/search/stats` | Get index statistics | Admin |
+| GET | `/api/v1/admin/search/health` | Check Meilisearch health | Admin |
 
 ### Query Parameters (GET /apartments)
 
-- `search` - Search in unitName, unitNumber, project name
+- `search` - Full-text search with typo tolerance (unitName, unitNumber, project name, description, features, location)
 - `projectId` - Filter by project
 - `bedrooms` - Filter by bedroom count
 - `minPrice` / `maxPrice` - Price range
@@ -175,9 +192,14 @@ nawy-apartments/
 
 - **User Authentication**: JWT-based authentication with registration and login
 - **Apartment Listing**: Browse apartments with search and filters
+- **Advanced Search**: Meilisearch-powered full-text search with:
+  - Typo tolerance (finds "skyline" when you type "skylin")
+  - Fuzzy matching
+  - Relevance ranking
+  - Fast prefix search
 - **Apartment Details**: View detailed apartment information
 - **Responsive Design**: Mobile-friendly interface
-- **Admin Features**: Create apartments (admin only)
+- **Admin Features**: Create apartments, trigger search reindex (admin only)
 - **API Documentation**: Interactive Swagger UI at `localhost:3001/api/docs`
 
 ## Security
@@ -212,6 +234,8 @@ Key variables:
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - Secret key for JWT signing (change in production!)
 - `REDIS_URL` - Redis connection string for rate limiting
+- `MEILISEARCH_URL` - Meilisearch connection URL
+- `MEILISEARCH_MASTER_KEY` - Meilisearch API key (change in production!)
 - `NEXT_PUBLIC_API_URL` - API URL for frontend
 - `CORS_ORIGIN` - Allowed CORS origin
 

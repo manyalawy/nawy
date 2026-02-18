@@ -1,6 +1,92 @@
 import { PrismaClient } from '@prisma/client';
+import { MeiliSearch } from 'meilisearch';
 
 const prisma = new PrismaClient();
+
+async function seedMeilisearch() {
+  const meilisearchUrl = process.env.MEILISEARCH_URL || 'http://localhost:7700';
+  const meilisearchKey = process.env.MEILISEARCH_MASTER_KEY;
+
+  if (!meilisearchKey) {
+    console.log('Skipping Meilisearch indexing (MEILISEARCH_MASTER_KEY not set)');
+    return;
+  }
+
+  try {
+    const client = new MeiliSearch({
+      host: meilisearchUrl,
+      apiKey: meilisearchKey,
+    });
+
+    // Check health
+    await client.health();
+    console.log('Connected to Meilisearch');
+
+    const apartments = await prisma.apartment.findMany({
+      include: { project: true },
+    });
+
+    const documents = apartments.map((apt) => ({
+      id: apt.id,
+      unitName: apt.unitName,
+      unitNumber: apt.unitNumber,
+      description: apt.description,
+      features: apt.features,
+      projectId: apt.projectId,
+      projectName: apt.project.name,
+      projectLocation: apt.project.location,
+      projectDeveloper: apt.project.developer,
+      price: Number(apt.price),
+      area: Number(apt.area),
+      bedrooms: apt.bedrooms,
+      bathrooms: apt.bathrooms,
+      floor: apt.floor,
+      status: apt.status,
+      createdAt: new Date(apt.createdAt).getTime(),
+      images: apt.images,
+    }));
+
+    // Create index with settings if needed
+    try {
+      await client.createIndex('apartments', { primaryKey: 'id' });
+    } catch {
+      // Index may already exist
+    }
+
+    const index = client.index('apartments');
+
+    // Configure index settings
+    await index.updateSettings({
+      searchableAttributes: [
+        'unitName',
+        'unitNumber',
+        'description',
+        'features',
+        'projectName',
+        'projectLocation',
+        'projectDeveloper',
+      ],
+      filterableAttributes: [
+        'projectId',
+        'bedrooms',
+        'bathrooms',
+        'price',
+        'area',
+        'floor',
+        'status',
+      ],
+      sortableAttributes: ['price', 'area', 'bedrooms', 'createdAt'],
+    });
+
+    // Clear and reindex
+    await index.deleteAllDocuments();
+    await index.addDocuments(documents);
+
+    console.log(`Indexed ${documents.length} apartments to Meilisearch`);
+  } catch (error) {
+    console.log('Meilisearch indexing skipped:', (error as Error).message);
+  }
+}
 
 async function main() {
   // Create Projects
@@ -194,6 +280,9 @@ async function main() {
   console.log('Seed data created successfully!');
   console.log(`Created ${projects.length} projects`);
   console.log(`Created ${apartmentData.length} apartments`);
+
+  // Index to Meilisearch
+  await seedMeilisearch();
 }
 
 main()

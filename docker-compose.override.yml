@@ -50,3 +50,8 @@ services:
 
   redis:
     env_file: .env
+
+  meilisearch:
+    env_file: .env
+    environment:
+      - MEILI_ENV=development
