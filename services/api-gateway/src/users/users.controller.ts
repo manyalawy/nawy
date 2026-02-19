@@ -8,14 +8,24 @@ import {
   HttpCode,
   HttpStatus,
   HttpException,
+  Res,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { firstValueFrom } from 'rxjs';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { LoginDto, RegisterDto } from './dto';
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 1000, // 1 hour
+  path: '/',
+};
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -50,13 +60,23 @@ export class UsersController {
   @Public()
   @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login and get JWT tokens' })
-  async login(@Body() dto: LoginDto) {
+  @ApiOperation({ summary: 'Login and get JWT token' })
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const response = await firstValueFrom(
         this.httpService.post(`${this.authServiceUrl}/auth/login`, dto),
       );
-      return response.data;
+      const { accessToken, user, expiresIn } = response.data.data;
+
+      res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+
+      return {
+        success: true,
+        data: { user, expiresIn },
+      };
     } catch (error: unknown) {
       const err = error as { response?: { status?: number; data?: unknown } };
       throw new HttpException(
@@ -70,12 +90,13 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
-  async getMe(@Request() req: { user: { id: string }; headers: { authorization?: string } }) {
+  async getMe(@Request() req: { user: { id: string }; cookies: { accessToken?: string } }) {
     try {
+      const token = req.cookies?.accessToken;
       const response = await firstValueFrom(
         this.httpService.get(`${this.authServiceUrl}/auth/me`, {
           headers: {
-            Authorization: req.headers.authorization,
+            Authorization: `Bearer ${token}`,
           },
         }),
       );
@@ -89,23 +110,21 @@ export class UsersController {
     }
   }
 
-  @Post('refresh')
+  @Post('logout')
   @Public()
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token' })
-  async refresh(@Body('refreshToken') refreshToken: string) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.authServiceUrl}/auth/refresh`, { refreshToken }),
-      );
-      return response.data;
-    } catch (error: unknown) {
-      const err = error as { response?: { status?: number; data?: unknown } };
-      throw new HttpException(
-        err.response?.data || 'Token refresh failed',
-        err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  @ApiOperation({ summary: 'Logout and clear authentication cookie' })
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    });
+
+    return {
+      success: true,
+      message: 'Logged out successfully',
+    };
   }
 }

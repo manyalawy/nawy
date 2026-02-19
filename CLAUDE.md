@@ -54,13 +54,12 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 
 **Key architectural patterns:**
 
-- **API Gateway as auth boundary**: JWT validation and role-based access control happen at the gateway level via global `JwtAuthGuard`. Individual services do not validate JWTs from external requests.
-- **`@Public()` decorator**: Bypasses the global auth guard for public endpoints (login, register, apartment listing).
+- **API Gateway as auth boundary**: JWT validation and role-based access control happen at the gateway level via global `JwtAuthGuard`. JWT is extracted from httpOnly cookies (not Authorization header). Individual services do not validate JWTs from external requests.
+- **`@Public()` decorator**: Bypasses the global auth guard for public endpoints (login, register, logout, apartment listing).
 - **`@Roles()` decorator + `RolesGuard`**: Admin-only endpoints (POST /apartments, POST /projects, search admin).
 - **HTTP proxying**: Gateway uses `@nestjs/axios` to proxy requests to backend services via `AUTH_SERVICE_URL` and `APARTMENT_SERVICE_URL` environment variables.
-- **Rate limiting**: Redis-backed rate limiting via `@nestjs/throttler` at the API Gateway. Configured with two tiers:
-  - `default`: 60 requests/minute (all endpoints)
-  - `strict`: 5 requests/minute (auth endpoints: login, register, refresh)
+- **Rate limiting**: Redis-backed rate limiting via `@nestjs/throttler` at the API Gateway. Configured with:
+  - `default`: 5 requests/minute for auth endpoints (login, register)
 - **Meilisearch for search**: Full-text search with typo tolerance, fuzzy matching, and relevance ranking. PostgreSQL remains source of truth; Meilisearch is a search-optimized read replica with automatic fallback to Prisma if unavailable.
 
 ## Key Files
@@ -84,6 +83,16 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 ## Security
 
 **Network isolation**: Internal services (auth-service, apartment-service, Redis) are not exposed to the host machine. They communicate only within the Docker network, accessible via the API Gateway.
+
+**JWT Authentication via httpOnly Cookies**:
+- Tokens are stored in `httpOnly` cookies (not localStorage) to prevent XSS attacks
+- Cookie configuration:
+  - `httpOnly: true` — JavaScript cannot access the token
+  - `secure: true` in production — HTTPS only
+  - `sameSite: 'lax'` — CSRF protection
+  - `maxAge: 1 hour` — Token expiry
+- Frontend uses `credentials: 'include'` to send cookies with requests
+- Login sets the cookie, logout clears it via `POST /api/v1/auth/logout`
 
 **Required environment variables**: Services validate required environment variables at startup and fail fast if missing:
 - `JWT_SECRET` is required for both api-gateway and auth-service
@@ -148,14 +157,14 @@ All sync operations are non-blocking (async) and log errors without failing the 
 
 **Admin endpoints:**
 ```bash
-# Trigger full reindex (requires admin JWT)
-curl -X POST "http://localhost:3001/api/v1/admin/search/reindex" -H "Authorization: Bearer <token>"
+# Trigger full reindex (requires admin - cookie auth via browser or include cookie)
+curl -X POST "http://localhost:3001/api/v1/admin/search/reindex" --cookie "accessToken=<token>"
 
 # Get index stats
-curl "http://localhost:3001/api/v1/admin/search/stats" -H "Authorization: Bearer <token>"
+curl "http://localhost:3001/api/v1/admin/search/stats" --cookie "accessToken=<token>"
 
 # Check health
-curl "http://localhost:3001/api/v1/admin/search/health" -H "Authorization: Bearer <token>"
+curl "http://localhost:3001/api/v1/admin/search/health" --cookie "accessToken=<token>"
 ```
 
 **Meilisearch index schema:**

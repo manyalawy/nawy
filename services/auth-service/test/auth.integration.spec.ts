@@ -139,7 +139,6 @@ describe('Auth Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('accessToken');
-      expect(response.body.data).toHaveProperty('refreshToken');
       expect(response.body.data).toHaveProperty('expiresIn');
       expect(response.body.data.expiresIn).toBe(3600);
       expect(response.body.data.user.email).toBe(testUser.email);
@@ -229,53 +228,10 @@ describe('Auth Integration Tests', () => {
     });
   });
 
-  // ==================== REFRESH TOKEN TESTS ====================
-
-  describe('POST /auth/refresh', () => {
-    let refreshToken: string;
-
-    beforeEach(async () => {
-      // Register and login to get refresh token
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testUser);
-
-      const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
-
-      refreshToken = loginResponse.body.data.refreshToken;
-    });
-
-    it('should return new access token with valid refresh token', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('accessToken');
-      expect(response.body.data).toHaveProperty('expiresIn');
-      expect(response.body.data.expiresIn).toBe(3600);
-    });
-
-    it('should return 401 for invalid refresh token', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken: 'invalid-refresh-token' })
-        .expect(401);
-
-      expect(response.body.message).toBe('Invalid refresh token');
-    });
-  });
-
   // ==================== FULL FLOW TEST ====================
 
   describe('Full Authentication Flow', () => {
-    it('should complete register -> login -> me -> refresh flow', async () => {
+    it('should complete register -> login -> me flow', async () => {
       // Step 1: Register
       const registerResponse = await request(app.getHttpServer())
         .post('/auth/register')
@@ -298,9 +254,8 @@ describe('Auth Integration Tests', () => {
         })
         .expect(200);
 
-      const { accessToken, refreshToken } = loginResponse.body.data;
+      const { accessToken } = loginResponse.body.data;
       expect(accessToken).toBeDefined();
-      expect(refreshToken).toBeDefined();
 
       // Step 3: Get current user with access token
       const meResponse = await request(app.getHttpServer())
@@ -310,23 +265,6 @@ describe('Auth Integration Tests', () => {
 
       expect(meResponse.body.data.id).toBe(userId);
       expect(meResponse.body.data.email).toBe('fullflow@test.com');
-
-      // Step 4: Refresh token
-      const refreshResponse = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken })
-        .expect(200);
-
-      const newAccessToken = refreshResponse.body.data.accessToken;
-      expect(newAccessToken).toBeDefined();
-
-      // Step 5: Use new access token
-      const meResponse2 = await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', `Bearer ${newAccessToken}`)
-        .expect(200);
-
-      expect(meResponse2.body.data.id).toBe(userId);
     });
   });
 });

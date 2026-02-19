@@ -42,10 +42,4 @@ export class AuthController {
   async getMe(@Request() req: RequestWithUser) {
     return this.authService.getMe(req.user.id);
   }
-
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  async refresh(@Body('refreshToken') refreshToken: string) {
-    return this.authService.refreshToken(refreshToken);
-  }
 }

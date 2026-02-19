@@ -133,9 +133,7 @@ describe('AuthService', () => {
       // Arrange
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockJwtService.sign
-        .mockReturnValueOnce('accessToken123')
-        .mockReturnValueOnce('refreshToken123');
+      mockJwtService.sign.mockReturnValue('accessToken123');
 
       // Act
       const result = await service.login(loginDto);
@@ -143,7 +141,6 @@ describe('AuthService', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.data.accessToken).toBe('accessToken123');
-      expect(result.data.refreshToken).toBe('refreshToken123');
       expect(result.data.expiresIn).toBe(3600);
       expect(result.data.user.email).toBe(mockUser.email);
     });
@@ -175,7 +172,7 @@ describe('AuthService', () => {
       );
     });
 
-    it('should generate tokens with correct payload', async () => {
+    it('should generate token with correct payload', async () => {
       // Arrange
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -192,9 +189,6 @@ describe('AuthService', () => {
       };
       expect(mockJwtService.sign).toHaveBeenCalledWith(expectedPayload, {
         expiresIn: '1h',
-      });
-      expect(mockJwtService.sign).toHaveBeenCalledWith(expectedPayload, {
-        expiresIn: '7d',
       });
     });
   });
@@ -224,51 +218,6 @@ describe('AuthService', () => {
       );
       await expect(service.getMe('nonexistent-id')).rejects.toThrow(
         'User not found',
-      );
-    });
-  });
-
-  describe('refreshToken', () => {
-    it('should return new access token when refresh token is valid', async () => {
-      // Arrange
-      const payload = { sub: mockUser.id, email: mockUser.email, role: mockUser.role };
-      mockJwtService.verify.mockReturnValue(payload);
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockJwtService.sign.mockReturnValue('newAccessToken');
-
-      // Act
-      const result = await service.refreshToken('validRefreshToken');
-
-      // Assert
-      expect(result.success).toBe(true);
-      expect(result.data.accessToken).toBe('newAccessToken');
-      expect(result.data.expiresIn).toBe(3600);
-    });
-
-    it('should throw UnauthorizedException when refresh token is invalid', async () => {
-      // Arrange
-      mockJwtService.verify.mockImplementation(() => {
-        throw new Error('Invalid token');
-      });
-
-      // Act & Assert
-      await expect(service.refreshToken('invalidToken')).rejects.toThrow(
-        UnauthorizedException,
-      );
-      await expect(service.refreshToken('invalidToken')).rejects.toThrow(
-        'Invalid refresh token',
-      );
-    });
-
-    it('should throw UnauthorizedException when user not found', async () => {
-      // Arrange
-      const payload = { sub: 'nonexistent-id', email: 'test@example.com', role: 'USER' };
-      mockJwtService.verify.mockReturnValue(payload);
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.refreshToken('validToken')).rejects.toThrow(
-        UnauthorizedException,
       );
     });
   });

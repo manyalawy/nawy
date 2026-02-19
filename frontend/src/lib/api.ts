@@ -4,25 +4,19 @@ import { Apartment, FilterParams, PaginatedResponse, Project } from '@/types/apa
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 class ApiClient {
-  private getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('accessToken');
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = this.getToken();
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     };
 
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -51,10 +45,9 @@ class ApiClient {
     return this.request('/auth/me');
   }
 
-  async refreshToken(refreshToken: string): Promise<{ success: boolean; data: { accessToken: string; expiresIn: number } }> {
-    return this.request('/auth/refresh', {
+  async logout(): Promise<{ success: boolean; message: string }> {
+    return this.request('/auth/logout', {
       method: 'POST',
-      body: JSON.stringify({ refreshToken }),
     });
   }
 
