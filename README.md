@@ -210,7 +210,7 @@ nawy-apartments/
 
 ### Auth Service
 
-The auth-service includes unit tests using Jest. Tests use mocking to isolate the service logic from external dependencies (database, JWT).
+The auth-service includes both unit tests and integration tests using Jest.
 
 **Running Tests:**
 
@@ -218,14 +218,16 @@ The auth-service includes unit tests using Jest. Tests use mocking to isolate th
 # Run all tests
 docker-compose exec auth-service npm test
 
-# Run tests in watch mode (re-runs on file changes)
+# Run tests in watch mode
 docker-compose exec auth-service npm run test:watch
 
 # Run tests with coverage report
 docker-compose exec auth-service npm run test:cov
 ```
 
-**Test Coverage:**
+#### Unit Tests
+
+Unit tests use mocking to isolate service logic from external dependencies (database, JWT). They test individual methods in isolation.
 
 | Method | Tests |
 |--------|-------|
@@ -235,9 +237,22 @@ docker-compose exec auth-service npm run test:cov
 | `refreshToken()` | Success, invalid token, user not found |
 | `validateUser()` | Success, returns null |
 
+#### Integration Tests
+
+Integration tests make real HTTP requests and use the actual database. They test the complete request flow from controller to database.
+
+| Endpoint | Tests |
+|----------|-------|
+| `POST /auth/register` | Success, duplicate email, validation errors |
+| `POST /auth/login` | Success, wrong password, unknown user, validation |
+| `GET /auth/me` | Valid JWT, no token, invalid token |
+| `POST /auth/refresh` | Valid token, invalid token |
+| Full flow | Register → Login → Me → Refresh |
+
 **Test Files:**
 
-- `services/auth-service/src/modules/auth/auth.service.spec.ts`
+- `services/auth-service/test/auth.unit.spec.ts` (unit tests)
+- `services/auth-service/test/auth.integration.spec.ts` (integration tests)
 
 ## Environment Variables
 
