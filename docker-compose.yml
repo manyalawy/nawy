@@ -1,13 +1,32 @@
 services:
-  db:
+  db-auth:
     image: postgres:16-alpine
-    env_file: .env
+    environment:
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+      POSTGRES_DB: ${AUTH_DB_NAME}
     ports:
-      - "5432:5432"
+      - "${AUTH_DB_PORT}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_auth_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nawy -d nawy_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-apartments:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${APARTMENT_DB_USER}
+      POSTGRES_PASSWORD: ${APARTMENT_DB_PASSWORD}
+      POSTGRES_DB: ${APARTMENT_DB_NAME}
+    ports:
+      - "${APARTMENT_DB_PORT}:5432"
+    volumes:
+      - postgres_apartments_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APARTMENT_DB_USER} -d ${APARTMENT_DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -52,7 +71,7 @@ services:
       - /app/node_modules
     command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
     depends_on:
-      db:
+      db-auth:
         condition: service_healthy
 
   apartment-service:
@@ -67,7 +86,7 @@ services:
       - /app/node_modules
     command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
     depends_on:
-      db:
+      db-apartments:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
@@ -106,5 +125,6 @@ services:
       - api-gateway
 
 volumes:
-  postgres_data:
+  postgres_auth_data:
+  postgres_apartments_data:
   meilisearch_data:

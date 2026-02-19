@@ -12,7 +12,7 @@ Always use Context7 MCP for fetching up-to-date documentation when working with 
 
 ```bash
 docker-compose up --build                    # Start all services (with hot-reload)
-docker-compose up db -d                      # Start database only
+docker-compose up db-auth db-apartments -d   # Start databases only
 docker-compose exec apartment-service npm run prisma:seed  # Seed apartments
 docker-compose exec auth-service npm run prisma:seed       # Seed users
 ```
@@ -43,13 +43,11 @@ Frontend (Next.js :3000)
     ▼
 API Gateway (NestJS :3001)  ← JWT validation happens here
     │
-    ├──► Auth Service (internal :3002)      → User/Auth Prisma schema
+    ├──► Auth Service (internal :3002)      → PostgreSQL auth_db (:5432)
     │
-    └──► Apartment Service (internal :3003) → Apartment/Project Prisma schema
+    └──► Apartment Service (internal :3003) → PostgreSQL apartments_db (:5433)
             │
-            ├──► Meilisearch (:7700)  ← Full-text search engine
-            │
-            └──► PostgreSQL (:5432)   ← Source of truth (nawy_db)
+            └──► Meilisearch (:7700)  ← Full-text search engine
 ```
 
 **Note:** Auth Service, Apartment Service, and Redis are internal to the Docker network (not exposed to host). All external requests go through the API Gateway.
@@ -92,17 +90,22 @@ API Gateway (NestJS :3001)  ← JWT validation happens here
 
 **Redis authentication**: Redis requires password authentication. The password is configured via `REDIS_PASSWORD` environment variable.
 
-## Known Issues
-
-**Migration naming conflict**: Both services share the same PostgreSQL database and `_prisma_migrations` table. Migration folder names must be unique across services to avoid conflicts where one service's migration is skipped because another service already recorded a migration with the same name.
-
 ## Environment Variables
 
 Environment variables are configured in `.env`. Key variables:
 
 | Variable | Description | Used By |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | auth-service, apartment-service |
+| `AUTH_DB_USER` | Auth database user | db-auth |
+| `AUTH_DB_PASSWORD` | Auth database password | db-auth |
+| `AUTH_DB_NAME` | Auth database name | db-auth |
+| `AUTH_DB_PORT` | Auth database host port | db-auth |
+| `AUTH_DATABASE_URL` | Auth PostgreSQL connection string | auth-service |
+| `APARTMENT_DB_USER` | Apartment database user | db-apartments |
+| `APARTMENT_DB_PASSWORD` | Apartment database password | db-apartments |
+| `APARTMENT_DB_NAME` | Apartment database name | db-apartments |
+| `APARTMENT_DB_PORT` | Apartment database host port | db-apartments |
+| `APARTMENT_DATABASE_URL` | Apartment PostgreSQL connection string | apartment-service |
 | `JWT_SECRET` | JWT signing key (required) | api-gateway, auth-service |
 | `AUTH_SERVICE_URL` | Auth service URL | api-gateway |
 | `APARTMENT_SERVICE_URL` | Apartment service URL | api-gateway |

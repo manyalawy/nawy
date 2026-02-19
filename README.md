@@ -29,12 +29,12 @@ A full-stack apartment listing application built with microservices architecture
     │           │          ┌──────▼──────┐                   │
     │           │          │ Meilisearch │ (full-text search)│
     │           │          │   :7700     │                   │
-    │           │          └──────┬──────┘                   │
-    │           └────────┬────────┘                          │
-    │            ┌───────▼───────┐                           │
-    │            │   PostgreSQL  │                           │
-    │            │   :5432       │                           │
-    │            └───────────────┘                           │
+    │           │          └─────────────┘                   │
+    │     ┌─────▼─────┐    ┌─────────────┐                   │
+    │     │ PostgreSQL│    │ PostgreSQL  │                   │
+    │     │ (auth_db) │    │(apartments) │                   │
+    │     │   :5432   │    │   :5433     │                   │
+    │     └───────────┘    └─────────────┘                   │
     └────────────────────────────────────────────────────────┘
 ```
 
@@ -258,7 +258,21 @@ Integration tests make real HTTP requests and use the actual database. They test
 
 Environment variables are configured in `.env`. Key variables:
 
-- `DATABASE_URL` - PostgreSQL connection string
+### Database (Auth Service)
+- `AUTH_DB_USER` - PostgreSQL user for auth database
+- `AUTH_DB_PASSWORD` - PostgreSQL password for auth database
+- `AUTH_DB_NAME` - Auth database name
+- `AUTH_DB_PORT` - Host port for auth database (default: 5432)
+- `AUTH_DATABASE_URL` - PostgreSQL connection string for auth-service
+
+### Database (Apartment Service)
+- `APARTMENT_DB_USER` - PostgreSQL user for apartment database
+- `APARTMENT_DB_PASSWORD` - PostgreSQL password for apartment database
+- `APARTMENT_DB_NAME` - Apartment database name
+- `APARTMENT_DB_PORT` - Host port for apartment database (default: 5433)
+- `APARTMENT_DATABASE_URL` - PostgreSQL connection string for apartment-service
+
+### Other
 - `JWT_SECRET` - Secret key for JWT signing (required)
 - `REDIS_PASSWORD` - Redis authentication password
 - `REDIS_URL` - Redis connection string (includes password)
