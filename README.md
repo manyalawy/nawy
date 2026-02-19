@@ -206,6 +206,39 @@ nawy-apartments/
 - **Required environment validation**: Services fail fast on startup if required environment variables (e.g., `JWT_SECRET`) are missing.
 - **Redis authentication**: Redis requires password authentication via `REDIS_PASSWORD`.
 
+## Testing
+
+### Auth Service
+
+The auth-service includes unit tests using Jest. Tests use mocking to isolate the service logic from external dependencies (database, JWT).
+
+**Running Tests:**
+
+```bash
+# Run all tests
+docker-compose exec auth-service npm test
+
+# Run tests in watch mode (re-runs on file changes)
+docker-compose exec auth-service npm run test:watch
+
+# Run tests with coverage report
+docker-compose exec auth-service npm run test:cov
+```
+
+**Test Coverage:**
+
+| Method | Tests |
+|--------|-------|
+| `register()` | Success, duplicate email, password hashing |
+| `login()` | Success, user not found, wrong password, token payload |
+| `getMe()` | Success, user not found |
+| `refreshToken()` | Success, invalid token, user not found |
+| `validateUser()` | Success, returns null |
+
+**Test Files:**
+
+- `services/auth-service/src/modules/auth/auth.service.spec.ts`
+
 ## Environment Variables
 
 Environment variables are configured in `.env`. Key variables:
