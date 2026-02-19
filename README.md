@@ -278,5 +278,6 @@ Environment variables are configured in `.env`. Key variables:
 - `REDIS_URL` - Redis connection string (includes password)
 - `MEILISEARCH_URL` - Meilisearch connection URL
 - `MEILISEARCH_MASTER_KEY` - Meilisearch API key
+- `MEILISEARCH_PORT` - Host port for Meilisearch
 - `NEXT_PUBLIC_API_URL` - API URL for frontend
 - `CORS_ORIGIN` - Allowed CORS origin

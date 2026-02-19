@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
       POSTGRES_DB: ${AUTH_DB_NAME}
     ports:
-      - "${AUTH_DB_PORT}:5432"
+      - "${AUTH_DB_PORT}:${AUTH_DB_PORT}"
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${APARTMENT_DB_PASSWORD}
       POSTGRES_DB: ${APARTMENT_DB_NAME}
     ports:
-      - "${APARTMENT_DB_PORT}:5432"
+      - "${APARTMENT_DB_PORT}:${APARTMENT_DB_PORT}"
     volumes:
       - postgres_apartments_data:/var/lib/postgresql/data
     healthcheck:
@@ -47,7 +47,7 @@ services:
     image: getmeili/meilisearch:v1.6
     env_file: .env
     ports:
-      - "7700:7700"
+      - "${MEILISEARCH_PORT}:${MEILISEARCH_PORT}"
     environment:
       - MEILI_ENV=development
       - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
