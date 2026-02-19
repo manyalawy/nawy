@@ -266,7 +266,3 @@ Environment variables are configured in `.env`. Key variables:
 - `MEILISEARCH_MASTER_KEY` - Meilisearch API key
 - `NEXT_PUBLIC_API_URL` - API URL for frontend
 - `CORS_ORIGIN` - Allowed CORS origin
-
-## License
-
-MIT
