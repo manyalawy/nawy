@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { StyledComponentsRegistry } from '@/lib/registry';
 import { ThemeProvider } from '@/styles/ThemeProvider';
 import { AuthProvider } from '@/context/AuthContext';
+import { LayoutShell } from '@/components/layout/LayoutShell';
 
 export const metadata: Metadata = {
   title: 'Nawy - Find Your Dream Apartment',
@@ -24,7 +25,9 @@ export default function RootLayout({
       <body>
         <StyledComponentsRegistry>
           <ThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <LayoutShell>{children}</LayoutShell>
+            </AuthProvider>
           </ThemeProvider>
         </StyledComponentsRegistry>
       </body>

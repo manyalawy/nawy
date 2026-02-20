@@ -3,25 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import styled from 'styled-components';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Container } from '@/components/layout/Container';
 import { ApartmentDetails } from '@/components/apartments/ApartmentDetails';
 import { Spinner } from '@/components/common/Spinner';
 import { Button } from '@/components/common/Button';
 import { Apartment } from '@/types/apartment';
 import { api } from '@/lib/api';
-
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-`;
-
-const Main = styled.main`
-  flex: 1;
-  padding: ${({ theme }) => theme.spacing.xl} 0;
-`;
 
 const LoadingContainer = styled.div`
   display: flex;
@@ -63,27 +50,21 @@ export default function ApartmentDetailsPage() {
   }, [id]);
 
   return (
-    <PageWrapper>
-      <Header />
-      <Main>
-        <Container>
-          {loading ? (
-            <LoadingContainer>
-              <Spinner size="lg" />
-            </LoadingContainer>
-          ) : error ? (
-            <ErrorContainer>
-              <p>{error}</p>
-              <Button onClick={() => window.location.reload()} style={{ marginTop: '16px' }}>
-                Try Again
-              </Button>
-            </ErrorContainer>
-          ) : apartment ? (
-            <ApartmentDetails apartment={apartment} />
-          ) : null}
-        </Container>
-      </Main>
-      <Footer />
-    </PageWrapper>
+    <Container>
+      {loading ? (
+        <LoadingContainer>
+          <Spinner size="lg" />
+        </LoadingContainer>
+      ) : error ? (
+        <ErrorContainer>
+          <p>{error}</p>
+          <Button onClick={() => window.location.reload()} style={{ marginTop: '16px' }}>
+            Try Again
+          </Button>
+        </ErrorContainer>
+      ) : apartment ? (
+        <ApartmentDetails apartment={apartment} />
+      ) : null}
+    </Container>
   );
 }

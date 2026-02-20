@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Container } from '@/components/layout/Container';
 import { ApartmentGrid } from '@/components/apartments/ApartmentGrid';
 import { SearchFilters } from '@/components/apartments/SearchFilters';
@@ -14,17 +12,6 @@ import { Button } from '@/components/common/Button';
 import { Apartment, FilterParams } from '@/types/apartment';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-`;
-
-const Main = styled.main`
-  flex: 1;
-  padding: ${({ theme }) => theme.spacing.xl} 0;
-`;
 
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.lg};
@@ -117,71 +104,65 @@ export default function ApartmentsPage() {
   };
 
   return (
-    <PageWrapper>
-      <Header />
-      <Main>
-        <Container>
-          <PageHeader>
-            <Title>Find Your Perfect Apartment</Title>
-            <Subtitle>
-              {total > 0 ? `${total} apartments available` : 'Browse our collection'}
-            </Subtitle>
-          </PageHeader>
+    <Container>
+      <PageHeader>
+        <Title>Find Your Perfect Apartment</Title>
+        <Subtitle>
+          {total > 0 ? `${total} apartments available` : 'Browse our collection'}
+        </Subtitle>
+      </PageHeader>
 
-          {user?.role === 'ADMIN' && (
-            <AdminActions>
-              <Button onClick={() => setIsCreateApartmentModalOpen(true)}>
-                Add Apartment
+      {user?.role === 'ADMIN' && (
+        <AdminActions>
+          <Button onClick={() => setIsCreateApartmentModalOpen(true)}>
+            Add Apartment
+          </Button>
+          <Button variant="secondary" onClick={() => setIsCreateProjectModalOpen(true)}>
+            Add Project
+          </Button>
+        </AdminActions>
+      )}
+
+      <SearchFilters filters={filters} onFiltersChange={handleFiltersChange} />
+
+      {loading ? (
+        <LoadingContainer>
+          <Spinner size="lg" />
+        </LoadingContainer>
+      ) : error ? (
+        <ErrorContainer>
+          <p>{error}</p>
+          <Button onClick={loadApartments} style={{ marginTop: '16px' }}>
+            Try Again
+          </Button>
+        </ErrorContainer>
+      ) : (
+        <>
+          <ApartmentGrid apartments={apartments} />
+
+          {totalPages > 1 && (
+            <PaginationWrapper>
+              <Button
+                variant="secondary"
+                disabled={filters.page === 1}
+                onClick={() => handlePageChange((filters.page || 1) - 1)}
+              >
+                Previous
               </Button>
-              <Button variant="secondary" onClick={() => setIsCreateProjectModalOpen(true)}>
-                Add Project
+              <PageInfo>
+                Page {filters.page} of {totalPages}
+              </PageInfo>
+              <Button
+                variant="secondary"
+                disabled={filters.page === totalPages}
+                onClick={() => handlePageChange((filters.page || 1) + 1)}
+              >
+                Next
               </Button>
-            </AdminActions>
+            </PaginationWrapper>
           )}
-
-          <SearchFilters filters={filters} onFiltersChange={handleFiltersChange} />
-
-          {loading ? (
-            <LoadingContainer>
-              <Spinner size="lg" />
-            </LoadingContainer>
-          ) : error ? (
-            <ErrorContainer>
-              <p>{error}</p>
-              <Button onClick={loadApartments} style={{ marginTop: '16px' }}>
-                Try Again
-              </Button>
-            </ErrorContainer>
-          ) : (
-            <>
-              <ApartmentGrid apartments={apartments} />
-
-              {totalPages > 1 && (
-                <PaginationWrapper>
-                  <Button
-                    variant="secondary"
-                    disabled={filters.page === 1}
-                    onClick={() => handlePageChange((filters.page || 1) - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <PageInfo>
-                    Page {filters.page} of {totalPages}
-                  </PageInfo>
-                  <Button
-                    variant="secondary"
-                    disabled={filters.page === totalPages}
-                    onClick={() => handlePageChange((filters.page || 1) + 1)}
-                  >
-                    Next
-                  </Button>
-                </PaginationWrapper>
-              )}
-            </>
-          )}
-        </Container>
-      </Main>
-      <Footer />
+        </>
+      )}
 
       <CreateApartmentModal
         isOpen={isCreateApartmentModalOpen}
@@ -194,6 +175,6 @@ export default function ApartmentsPage() {
         onClose={() => setIsCreateProjectModalOpen(false)}
         onSuccess={() => {}}
       />
-    </PageWrapper>
+    </Container>
   );
 }
